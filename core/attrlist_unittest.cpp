@@ -28,7 +28,13 @@ class TestAttrList : public testing::Test {
     ~TestAttrList() {}
 
    protected:
-    void SetUp() {}
+    void SetUp() {
+        Config config;
+        config.set_param("maximum_thread_memory", "134217728");
+        config.set_param("page_size", "2097152");
+        Context::set_config(std::move(config));
+        Context::set_local_tid(0);
+    }
     void TearDown() {}
 };
 

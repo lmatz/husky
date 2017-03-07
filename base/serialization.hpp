@@ -49,6 +49,7 @@ class BinStream {
     void purge();
     void resize(size_t size);
     void seek(size_t pos);
+    BinStream sub_stream(size_t s_pos, size_t len);
 
     void append(const BinStream& m);
     void push_back_bytes(const char* src, size_t sz);
@@ -145,8 +146,9 @@ BinStream& operator>>(BinStream& stream, std::vector<OutputT>& v) {
     stream >> len;
     v.clear();
     v.resize(len);
-    for (int i = 0; i < v.size(); ++i)
+    for (int i = 0; i < v.size(); ++i) {
         stream >> v[i];
+    }
     return stream;
 }
 

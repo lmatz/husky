@@ -1,10 +1,14 @@
 #include "core/objlist.hpp"
 
 #include <algorithm>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include "gtest/gtest.h"
+
+#include "core/memory_pool.hpp"
+#include "core/page_store.hpp"
 
 namespace husky {
 namespace {
@@ -15,13 +19,27 @@ class TestObjList : public testing::Test {
     ~TestObjList() {}
 
    protected:
-    void SetUp() {}
-    void TearDown() {}
+    void SetUp() {
+        MemoryPool::free_mem_pool();
+        PageStore::drop_all_pages();
+        PageStore::free_page_map();
+        Config config;
+        int64_t max_thread_mem = 1024 * 1024 * 32;
+        config.set_param("maximum_thread_memory", std::to_string(max_thread_mem));
+        config.set_param("page_size", "4194304");
+        Context::set_config(std::move(config));
+        Context::set_local_tid(0);
+    }
+    void TearDown() {
+        MemoryPool::free_mem_pool();
+        PageStore::drop_all_pages();
+        PageStore::free_page_map();
+    }
 };
 
 class Obj {
    public:
-    using KeyT = int;
+    using KeyT = int64_t;
     KeyT key;
     const KeyT& id() const { return key; }
     Obj() {}
@@ -32,6 +50,8 @@ class Obj {
     friend BinStream& operator>>(BinStream& stream, Obj& obj) { return stream >> obj.key; }
 };
 
+size_t size__ = 100;
+
 TEST_F(TestObjList, InitAndDelete) {
     ObjList<Obj>* obj_list = new ObjList<Obj>();
     ASSERT_TRUE(obj_list != nullptr);
@@ -40,41 +60,41 @@ TEST_F(TestObjList, InitAndDelete) {
 
 TEST_F(TestObjList, AddObject) {
     ObjList<Obj> obj_list;
-    for (int i = 0; i < 10; ++i) {
+    for (int64_t i = 0; i < size__; ++i) {
         Obj obj(i);
         obj_list.add_object(obj);
     }
     std::vector<Obj>& v = obj_list.get_data();
-    for (int i = 0; i < 10; ++i) {
+    for (int64_t i = 0; i < size__; ++i) {
         EXPECT_EQ(v[i].key, i);
     }
 }
 
 TEST_F(TestObjList, AddMoveObject) {
     ObjList<Obj> obj_list;
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < size__; ++i) {
         Obj obj(i);
         obj_list.add_object(std::move(obj));
     }
     std::vector<Obj>& v = obj_list.get_data();
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < size__; ++i) {
         EXPECT_EQ(v[i].key, i);
     }
 }
 
 TEST_F(TestObjList, Sort) {
     ObjList<Obj> obj_list;
-    for (int i = 0; i < 10; ++i) {
-        Obj obj(10 - i - 1);
+    for (int i = 0; i < size__; ++i) {
+        Obj obj(size__ - i - 1);
         obj_list.add_object(std::move(obj));
     }
     obj_list.sort();
-    EXPECT_EQ(obj_list.get_sorted_size(), 10);
+    EXPECT_EQ(obj_list.get_sorted_size(), size__);
     EXPECT_EQ(obj_list.get_num_del(), 0);
     EXPECT_EQ(obj_list.get_hashed_size(), 0);
-    EXPECT_EQ(obj_list.get_size(), 10);
+    EXPECT_EQ(obj_list.get_size(), size__);
     std::vector<Obj>& v = obj_list.get_data();
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < size__; ++i) {
         EXPECT_EQ(v[i].key, i);
     }
 }
@@ -85,11 +105,15 @@ TEST_F(TestObjList, Delete) {
         Obj obj(i);
         obj_list.add_object(std::move(obj));
     }
+    EXPECT_EQ(obj_list.get_size(), 10);
     std::vector<Obj>& v = obj_list.get_data();
     Obj* p = &v[3];
     Obj* p2 = &v[7];
     obj_list.delete_object(p);
+    EXPECT_EQ(obj_list.get_num_del(), 1);
+    EXPECT_EQ(obj_list.get_size(), 9);
     obj_list.delete_object(p2);
+    EXPECT_EQ(obj_list.get_size(), 8);
     EXPECT_EQ(obj_list.get_num_del(), 2);
     EXPECT_EQ(obj_list.get_del(3), 1);
     EXPECT_EQ(obj_list.get_del(5), 0);
@@ -131,47 +155,14 @@ TEST_F(TestObjList, IndexOf) {
     }
 }
 
-TEST_F(TestObjList, WriteAndRead) {
-    ObjList<Obj> list_to_write;
-    for (int i = 10; i > 0; --i) {
-        Obj obj(i);
-        list_to_write.add_object(std::move(obj));
-    }
-    list_to_write.sort();
-    list_to_write.add_object(std::move(Obj(13)));
-    list_to_write.add_object(std::move(Obj(12)));
-    list_to_write.add_object(std::move(Obj(11)));
-    std::vector<Obj>& v = list_to_write.get_data();
-    Obj* p = &v[0];
-    Obj* p2 = &v[10];
-    list_to_write.delete_object(p);   // rm 1
-    list_to_write.delete_object(p2);  // rm 13
-    size_t old_objlist_size = list_to_write.get_size();
-
-    EXPECT_TRUE(list_to_write.write_to_disk());
-    size_t data_capacity_after_write = list_to_write.get_data().capacity();
-    size_t bitmap_capacity_after_write = list_to_write.get_del_bitmap().capacity();
-    EXPECT_EQ(data_capacity_after_write, 0);
-    EXPECT_EQ(bitmap_capacity_after_write, 0);
-
-    std::string list_to_write_path = list_to_write.id2str();
-    ObjList<Obj> list_to_read;
-    list_to_read.read_from_disk(list_to_write_path);
-
-    EXPECT_EQ(list_to_read.get_size(), old_objlist_size);
-    EXPECT_EQ(list_to_read.get_size(), list_to_read.get_sorted_size());
-    EXPECT_EQ(list_to_read.get_size(), list_to_read.get_del_bitmap().size());
-    EXPECT_EQ(list_to_read.get_hashed_size(), 0);
-    EXPECT_EQ(list_to_read.get_num_del(), 0);
-
-    for (size_t i = 0; i < list_to_read.get_size() - 1; i++)
-        EXPECT_LE(list_to_read.get(i).id(), list_to_read.get(i + 1).id());
-    for (size_t i = 0; i < list_to_read.get_size() - 1; i++)
-        EXPECT_EQ(list_to_read.get_del(i), false);
-}
-
 TEST_F(TestObjList, EstimatedStorage) {
-    const size_t len = 1000 * 1000 * 10;
+    std::string str = Context::get_param("maximum_thread_memory");
+    std::stringstream str_stream(str);
+    int64_t max_thread_mem;
+    str_stream >> max_thread_mem;
+    int size_obj = sizeof(Obj);
+
+    const size_t len = max_thread_mem / (size_obj + 4);
     ObjList<Obj> test_list;
     for (size_t i = 0; i < len; ++i) {
         Obj obj(i);
@@ -184,6 +175,59 @@ TEST_F(TestObjList, EstimatedStorage) {
     double diff_time =
         double(std::max(real_storage, estimated_storage)) / double(std::min(real_storage, estimated_storage));
     EXPECT_EQ(diff_time, 1);
+}
+
+TEST_F(TestObjList, Large) {
+    auto& mem_pool = MemoryPool::get_mem_pool();
+
+    std::string str = Context::get_param("maximum_thread_memory");
+    std::stringstream str_stream(str);
+    int64_t max_thread_mem;
+    str_stream >> max_thread_mem;
+    int size_obj = sizeof(Obj);
+    str = Context::get_param("page_size");
+    str_stream.clear();
+    str_stream.str(str);
+    int page_size;
+    str_stream >> page_size;
+
+    EXPECT_EQ(mem_pool.capacity(), max_thread_mem / page_size);
+
+    const size_t len = max_thread_mem / size_obj;
+    const size_t del_len = 1024 * 1024;
+    ObjList<Obj> list1;
+    ObjList<Obj> list2;
+    ObjList<Obj> list3;
+
+    for (size_t i = 0; i < len; ++i) {
+        Obj obj(i);
+        list1.add_object(obj);
+    }
+
+    for (size_t i = 0; i < del_len; ++i) {
+        list1.delete_object(i);
+    }
+
+    for (size_t i = 0; i < len; ++i) {
+        Obj obj(i);
+        list2.add_object(obj);
+    }
+
+    EXPECT_FALSE(list1.check_data_in_memory());
+    EXPECT_EQ(list1.get_size(), len - del_len);
+
+    Obj* ptr = list1.find(1024 * 1024);
+    size_t idx = list1.index_of(ptr);
+    EXPECT_EQ(idx, 0);
+
+    EXPECT_FALSE(list2.check_data_in_memory());
+    EXPECT_EQ(list1.get_size(), len - del_len);
+
+    list1.delete_object(1024 * 1024);
+    EXPECT_EQ(list1.get_num_del(), 1);
+    list1.deletion_finalize();
+    EXPECT_EQ(list1.get_num_del(), 0);
+    EXPECT_EQ(list1.get_size(), len - del_len - 1);
 }
 
 }  // namespace

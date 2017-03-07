@@ -38,6 +38,16 @@ class Word {
 
     KeyT word;
     int count = 0;
+
+    friend husky::BinStream& operator<<(husky::BinStream& stream, const Word& word) {
+        stream << word.word << word.count;
+        return stream;
+    }
+
+    friend husky::BinStream& operator>>(husky::BinStream& stream, Word& word) {
+        stream >> word.word >> word.count;
+        return stream;
+    }
 };
 
 void aggregator() {

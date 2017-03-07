@@ -14,27 +14,30 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-
-#include "base/serialization.hpp"
+#include "sys/sysinfo.h"
+#include "sys/types.h"
 
 namespace husky {
 namespace base {
-
-class DiskStore {
+class Memory {
    public:
-    DiskStore() = delete;
-    explicit DiskStore(const std::string& path);
-    virtual ~DiskStore() = default;
+    static int64_t total_phys_mem() {
+        sysinfo(&mem_info);
+        int64_t total_phys_mem = mem_info.totalram;
+        total_phys_mem *= mem_info.mem_unit;
+        return total_phys_mem;
+    }
 
-    BinStream read();
-    bool write(BinStream&& bs);
-    bool write(BinStream& bs);
+    static int64_t total_virtual_mem() {
+        sysinfo(&mem_info);
+        int64_t total_vir_mem = mem_info.totalram;
+        total_vir_mem += mem_info.totalswap;
+        total_vir_mem *= mem_info.mem_unit;
+        return total_vir_mem;
+    }
 
    private:
-    std::string path_;
+    static struct sysinfo mem_info;
 };
-
 }  // namespace base
 }  // namespace husky

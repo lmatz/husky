@@ -35,6 +35,15 @@ class LabeledPointHObj : public LabeledPoint<Vector<FeatureT, is_sparse>, LabelT
     explicit LabeledPointHObj(int feature_num) : LabeledPoint<FeatureV, LabelT>() { this->x = FeatureV(feature_num); }
     LabeledPointHObj(FeatureV& x, LabelT& y) : LabeledPoint<FeatureV, LabelT>(x, y) {}
     LabeledPointHObj(FeatureV&& x, LabelT&& y) : LabeledPoint<FeatureV, LabelT>(x, y) {}
+
+    friend husky::BinStream& operator<<(husky::BinStream& stream,
+                                        const LabeledPointHObj<FeatureT, LabelT, is_sparse>& b) {
+        stream << b.x << b.y << b.key;
+    }
+
+    friend husky::BinStream& operator>>(husky::BinStream& stream, LabeledPointHObj<FeatureT, LabelT, is_sparse>& b) {
+        stream >> b.x >> b.y >> b.key;
+    }
 };  // LabeledPointHObj
 
 }  // namespace ml

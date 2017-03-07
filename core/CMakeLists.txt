@@ -20,6 +20,7 @@ add_subdirectory(channel)
 file(GLOB core-src-files
     accessor.cpp
     accessor_store.cpp
+    balance.cpp
     combiner.cpp
     config.cpp
     context.cpp
@@ -28,12 +29,14 @@ file(GLOB core-src-files
     job_runner.cpp
     mailbox.cpp
     memory_checker.cpp
+    memory_pool.cpp
     network.cpp
     objlist.cpp
     objlist_store.cpp
+    page.cpp
+    page_store.cpp
     shuffle_combiner_store.cpp
-    worker_info.cpp
-    balance.cpp)
+    worker_info.cpp)
 husky_cache_variable(core-src-files ${core-src-files})
 
 add_library(core-objs OBJECT ${core-src-files})

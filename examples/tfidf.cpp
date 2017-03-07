@@ -97,6 +97,15 @@ class Term {
     KeyT termid;
     double idf;
     const KeyT& id() const { return termid; }
+
+    friend husky::BinStream& operator<<(husky::BinStream& stream, const Term& term) {
+        stream << term.termid << term.idf;
+        return stream;
+    }
+
+    friend husky::BinStream& operator>>(husky::BinStream& stream, Term term) {
+        stream >> term.termid >> term.idf;
+    }
 };
 
 void tfidf() {

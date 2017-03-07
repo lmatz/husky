@@ -23,6 +23,7 @@
 #include "boost/program_options.hpp"
 
 #include "base/log.hpp"
+#include "base/memory.hpp"
 #include "core/network.hpp"
 
 namespace husky {
@@ -77,15 +78,27 @@ bool Config::init_with_args(int ac, char** av, const std::vector<std::string>& c
                                      "Worker information.\nFormat is '%worker_hostname:%thread_number'.\nUse "
                                      "colon ':' as separator.");
 
+    po::options_description optional_options("Optional options");
+    optional_options.add_options()("maximum_thread_memory", po::value<std::string>()->default_value(""),
+                                   "Maximum memory for a thread")(
+        "maximum_process_memory",
+        po::value<std::string>()->default_value(std::to_string(base::Memory::total_phys_mem())),
+        "Maximum memory for a process")("page_size", po::value<std::string>()->default_value("4194304"),
+                                        "Size of a page");
+
     po::options_description customized_options("Customized options");
     if (!customized.empty())
         for (auto& arg : customized)
             customized_options.add_options()(arg.c_str(), po::value<std::string>(), "");
 
     po::options_description cmdline_options;
-    cmdline_options.add(generic_options).add(config_file_options).add(required_options).add(worker_info_options);
+    cmdline_options.add(generic_options)
+        .add(config_file_options)
+        .add(required_options)
+        .add(worker_info_options)
+        .add(optional_options);
     po::options_description config_options;
-    config_options.add(required_options).add(worker_info_config);
+    config_options.add(required_options).add(worker_info_config).add(optional_options);
     if (!customized_options.options().empty()) {
         cmdline_options.add(customized_options);
         config_options.add(customized_options);
@@ -184,6 +197,23 @@ bool Config::init_with_args(int ac, char** av, const std::vector<std::string>& c
     } else {
         LOG_E << "arg worker.info is needed";
     }
+
+    // optional options
+    if (vm.count("maximum_thread_memory")) {
+        set_param("maximum_thread_memory", vm["maximum_thread_memory"].as<std::string>());
+    } else {
+        std::string str_max_proc_mem = vm["maximum_process_memory"].as<std::string>();
+        std::stringstream str_stream(str_max_proc_mem);
+        int64_t max_proc_mem;
+        str_stream >> max_proc_mem;
+        int num_local_threads = 1;
+        if (worker_info != nullptr) {
+            num_local_threads = worker_info->get_num_local_workers();
+        }
+        set_param("maximum_thread_memory", std::to_string(max_proc_mem / num_local_threads));
+    }
+    set_param("maximum_process_memory", vm["maximum_process_memory"].as<std::string>());
+    set_param("page_size", vm["page_size"].as<std::string>());
 
     if (!customized.empty()) {
         for (auto& arg : customized)

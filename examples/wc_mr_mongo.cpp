@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <random>
 #include <set>
 #include <string>
 #include <utility>
@@ -36,6 +37,14 @@ class Word {
 
     KeyT word;
     int count = 0;
+
+    friend husky::BinStream& operator<<(husky::BinStream& stream, const Word& w) {
+        stream << w.word << w.count;
+    }
+
+    friend husky::BinStream& operator>>(husky::BinStream& stream, Word& w) {
+        stream >> w.word >> w.count;
+    }
 };
 
 bool operator<(const std::pair<int, std::string>& a, const std::pair<int, std::string>& b) {
@@ -49,7 +58,9 @@ void wc() {
     infmt.set_query("");
 
     auto& word_list = husky::ObjListStore::create_objlist<Word>();
+    auto& word_list2 = husky::ObjListStore::create_objlist<Word>();
     auto& ch = husky::ChannelStore::create_push_combined_channel<int, husky::SumCombiner<int>>(infmt, word_list);
+    auto& ch2 = husky::ChannelStore::create_push_combined_channel<int, husky::SumCombiner<int>>(infmt, word_list2);
 
     auto parse_wc = [&](std::string& chunk) {
         mongo::BSONObj o = mongo::fromjson(chunk);
@@ -59,7 +70,16 @@ void wc() {
         boost::char_separator<char> sep(" \t");
         boost::tokenizer<boost::char_separator<char>> tok(content, sep);
         for (auto& w : tok) {
+            std::random_device rd;
+            std::mt19937 generator(rd());
+            std::uniform_real_distribution<double> distribution(-1.0, 1.0);
+            double x = distribution(generator);
+            if (x < 0.4) {
+                ch.push(1, w+"1");
+                ch2.push(1, w+"1");
+            }
             ch.push(1, w);
+            ch2.push(1, w);
         }
     };
 
@@ -95,6 +115,9 @@ void wc() {
 
     husky::list_execute(word_list, [&ch, &unique_topk, add_to_topk](Word& word) {
         unique_topk.update(add_to_topk, std::make_pair(ch.get(word), word.id()));
+    });
+
+    husky::list_execute(word_list2, [](Word& word){
     });
 
     husky::lib::AggregatorFactory::sync();

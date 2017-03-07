@@ -71,6 +71,21 @@ void BinStream::resize(size_t size) {
 
 void BinStream::seek(size_t pos) { front_ = pos; }
 
+BinStream BinStream::sub_stream(size_t s_pos, size_t len) {
+    int size = buffer_.size();
+    auto it_start = buffer_.begin() + front_ + s_pos;
+    if (front_ + s_pos > size) {
+        std::vector<char> v;
+        return BinStream(std::move(v));
+    }
+    auto it_end = it_start + len;
+    if (front_ + s_pos + len > size) {
+        it_end = buffer_.end();
+    }
+    std::vector<char> v(it_start, it_end);
+    return BinStream(std::move(v));
+}
+
 void BinStream::push_back_bytes(const char* src, size_t sz) {
     buffer_.insert(buffer_.end(), (const char*) src, (const char*) src + sz);
 }

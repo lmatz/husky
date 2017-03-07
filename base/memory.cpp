@@ -12,29 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#include <string>
-#include <vector>
-
-#include "base/serialization.hpp"
+#include "base/memory.hpp"
 
 namespace husky {
 namespace base {
 
-class DiskStore {
-   public:
-    DiskStore() = delete;
-    explicit DiskStore(const std::string& path);
-    virtual ~DiskStore() = default;
-
-    BinStream read();
-    bool write(BinStream&& bs);
-    bool write(BinStream& bs);
-
-   private:
-    std::string path_;
-};
-
-}  // namespace base
-}  // namespace husky
+struct sysinfo Memory::mem_info;
+}
+}

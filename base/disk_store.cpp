@@ -40,8 +40,22 @@ BinStream DiskStore::read() {
 
 // TODO(legend): Will use `pwrite` or other asio functions instead.
 bool DiskStore::write(BinStream&& bs) {
-    if (bs.get_buffer_vector().empty())
+    //    if (bs.get_buffer_vector().empty())
+    //        return false;
+
+    std::ofstream file;
+    file.open(path_, std::ofstream::out | std::ofstream::binary);
+    if (!file)
         return false;
+
+    std::copy(bs.get_buffer_vector().begin(), bs.get_buffer_vector().end(), std::ostreambuf_iterator<char>(file));
+    file.close();
+    return true;
+}
+
+bool DiskStore::write(BinStream& bs) {
+    //    if (bs.get_buffer_vector().empty())
+    //        return false;
 
     std::ofstream file;
     file.open(path_, std::ofstream::out | std::ofstream::binary);
