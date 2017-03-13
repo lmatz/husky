@@ -61,6 +61,12 @@ target_link_libraries(WordCountFlume ${husky})
 target_link_libraries(WordCountFlume ${HUSKY_EXTERNAL_LIB})
 husky_default_properties(WordCountFlume)
 
+# WordCountORC
+add_executable(WordCountORC wc_mr_orc.cpp)
+target_link_libraries(WordCountORC ${husky})
+target_link_libraries(WordCountORC ${HUSKY_EXTERNAL_LIB})
+husky_default_properties(WordCountORC)
+
 # PI
 add_executable(PI pi.cpp)
 target_link_libraries(PI ${husky})
@@ -120,3 +126,9 @@ add_executable(AMAT affinity.cpp)
 target_link_libraries(AMAT ${husky})
 target_link_libraries(AMAT ${HUSKY_EXTERNAL_LIB})
 husky_default_properties(AMAT)
+
+# Cube
+add_executable(Cube cube.cpp)
+target_link_libraries(Cube ${husky})
+target_link_libraries(Cube ${HUSKY_EXTERNAL_LIB})
+husky_default_properties(Cube)
