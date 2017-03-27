@@ -49,6 +49,7 @@ class BinStream {
     void purge();
     void resize(size_t size);
     void seek(size_t pos);
+    BinStream sub_stream(size_t pos, size_t len);
 
     void append(const BinStream& m);
     void push_back_bytes(const char* src, size_t sz);
