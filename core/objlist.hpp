@@ -29,6 +29,7 @@
 #include "core/attrlist.hpp"
 #include "core/channel/channel_destination.hpp"
 #include "core/channel/channel_source.hpp"
+#include "core/page.hpp"
 
 namespace husky {
 
@@ -53,6 +54,8 @@ class ObjListBase : public ChannelSource, public ChannelDestination {
     inline size_t get_id() const { return id_; }
 
     virtual size_t get_size() const = 0;
+
+    virtual void clear_page_from_memory(Page* page) = 0;
 
    private:
     size_t id_;
@@ -305,6 +308,10 @@ class ObjList : public ObjListBase {
         std::vector<ObjT>& v = objlist_data_.data_;
         size_t ret = bs.size() * sizeof(char) * v.capacity() / sample_num;
         return ret;
+    }
+
+    virtual void clear_page_from_memory(Page* page) {
+
     }
 
    protected:

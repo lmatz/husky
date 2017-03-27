@@ -33,7 +33,8 @@ file(GLOB core-src-files
     objlist_store.cpp
     shuffle_combiner_store.cpp
     worker_info.cpp
-    balance.cpp)
+    balance.cpp
+    page.cpp)
 husky_cache_variable(core-src-files ${core-src-files})
 
 add_library(core-objs OBJECT ${core-src-files})
