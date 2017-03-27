@@ -24,7 +24,8 @@ file(GLOB base-src-files
     disk_store.cpp
     serialization.cpp
     session_local.cpp
-    thread_support.cpp)
+    thread_support.cpp
+    memory.cpp)
 husky_cache_variable(base-src-files ${base-src-files})
 
 add_library(base-objs OBJECT ${base-src-files})
