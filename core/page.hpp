@@ -22,6 +22,7 @@
 #include "base/disk_store.hpp"
 #include "base/log.hpp"
 #include "base/serialization.hpp"
+#include "base/time.hpp"
 #include "core/context.hpp"
 
 namespace husky {
@@ -37,16 +38,17 @@ class Page {
    public:
     using KeyT = size_t;
 
-    explicit Page(KeyT id, size_t tid, size_t page_size) : id_(id), tid_(tid), all_bytes_(page_size) {
-        this->file_name_ = "/var/tmp/page-" + std::to_string(tid_) + "-" + std::to_string(id_);
+    // TODO(lmatz): setting the path to keep temporary files.
+    explicit Page(KeyT id, size_t page_size) : id_(id), all_bytes_(page_size) {
+        this->file_name_ =
+            "/var/tmp/page-" + std::to_string(base::get_current_time_milliseconds()) + "-" + std::to_string(id_);
         this->in_memory_ = false;
         this->bin_in_memory_ = false;
     }
 
     bool write_to_disk() {
         if (!in_memory_)
-            throw base::HuskyException("page " + std::to_string(id_) + " on thread " + std::to_string(tid_) +
-                                       " cannot write to disk because it is not in memory.");
+            throw base::HuskyException("page " + file_name_ + " cannot write to disk because it is not in memory.");
         DiskStore ds(file_name_);
         BinStream tmp_bs(bs_);
         return ds.write(std::move(tmp_bs));
@@ -55,8 +57,7 @@ class Page {
     // read the data from disk into binstream
     void read_from_disk() {
         if (!in_memory_)
-            throw base::HuskyException("page " + std::to_string(id_) + " on thread " + std::to_string(tid_) +
-                                       " cannot read from disk because it is not in memory.");
+            throw base::HuskyException("page " + file_name_ + " cannot read from disk because it is not in memory.");
         DiskStore ds(file_name_);
         bs_ = ds.read();
         bin_in_memory_ = true;
@@ -148,7 +149,6 @@ class Page {
 
    private:
     size_t id_;
-    size_t tid_;
     ObjListBase* owner_ = nullptr;
 };
 

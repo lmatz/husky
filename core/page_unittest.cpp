@@ -5,7 +5,6 @@
 
 #include "gtest/gtest.h"
 
-
 namespace husky {
 namespace {
 
@@ -20,10 +19,10 @@ class TestPage : public testing::Test {
 };
 
 TEST_F(TestPage, Functional) {
-    Page p1(1, 0, 4194304);
+    Page p1(1, 4 * 1024 * 1024);
     p1.swap_in_memory();
     EXPECT_EQ(p1.get_bin().size(), 0);
-    EXPECT_EQ(p1.all_memory(), 4194304);
+    EXPECT_EQ(p1.all_memory(), 4 * 1024 * 1024);
 
     std::vector<char> vec;
     for (char i = 'a'; i <= 'z'; i++) {
