@@ -27,7 +27,6 @@ file(GLOB core-src-files
     hash_ring.cpp
     job_runner.cpp
     mailbox.cpp
-    memory_checker.cpp
     network.cpp
     objlist.cpp
     objlist_store.cpp

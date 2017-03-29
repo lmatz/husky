@@ -20,7 +20,6 @@
 #include "core/config.hpp"
 #include "core/coordinator.hpp"
 #include "core/mailbox.hpp"
-#include "core/memory_checker.hpp"
 #include "core/worker_info.hpp"
 
 namespace husky {
@@ -39,7 +38,6 @@ struct ContextGlobal {
     std::unique_ptr<CentralRecver> central_recver;
     Config config;
     Coordinator coordinator;
-    MemoryChecker memory_checker;
     WorkerInfo worker_info;
 };
 
@@ -86,8 +84,6 @@ class Context {
     static int get_num_processes() { return global_.worker_info.get_num_processes(); }
 
     static Coordinator* get_coordinator() { return &global_.coordinator; }
-
-    static MemoryChecker* get_memory_checker() { return &global_.memory_checker; }
 
     static int get_process_id() { return global_.worker_info.get_process_id(); }
 
