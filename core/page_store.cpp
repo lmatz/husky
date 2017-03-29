@@ -25,7 +25,7 @@ thread_local PageMap* PageStore::s_page_map_ = nullptr;
 thread_local PageSet* PageStore::s_page_set_ = nullptr;
 thread_local size_t PageStore::s_counter = 0;
 // 4MB
-const size_t PageStore::k_page_size_ = 4 * 1024 * 1024;
+const size_t PageStore::k_page_size = 4 * 1024 * 1024;
 
 // set finalize_all_objlists priority to Level1, the higher the level, the higher the priority
 static thread_local base::RegSessionThreadFinalizer finalize_all_objlists(base::SessionLocalPriority::Level1, []() {

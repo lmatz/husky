@@ -49,6 +49,8 @@ class Page {
     bool write_to_disk() {
         if (!in_memory_)
             throw base::HuskyException("page " + file_name_ + " cannot write to disk because it is not in memory.");
+        if (bs_.size()==0)
+            return true;
         DiskStore ds(file_name_);
         BinStream tmp_bs(bs_);
         return ds.write(std::move(tmp_bs));

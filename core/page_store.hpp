@@ -37,7 +37,7 @@ class PageStore {
             s_page_set_->erase(it);
             return page;
         }
-        page = new Page(s_counter, k_page_size_);
+        page = new Page(s_counter, k_page_size);
         s_counter++;
         page_map.insert({page->get_key(), page});
         DLOG_I << "page store has " << page_map.size() << " pages";
@@ -59,6 +59,8 @@ class PageStore {
 
     static void free_page_map();
 
+    static const size_t k_page_size;
+
    protected:
     static void init_page_map();
     static PageMap& get_page_map();
@@ -67,7 +69,6 @@ class PageStore {
     static thread_local PageSet* s_page_set_;
     static thread_local PageMap* s_page_map_;
     static thread_local size_t s_counter;
-    static const size_t k_page_size_;
 };
 
 }  // namespace husky
