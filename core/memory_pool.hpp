@@ -47,11 +47,13 @@ class MemoryPool {
     // the maximum number of pages allowed by the pool
     inline size_t capacity() { return num_pages_; }
 
+    inline size_t max_thread_mem() { return max_thread_mem_; }
    private:
     MemoryPool();
 
     LRUCache<typename Page::KeyT, Page*>* cache_;
     size_t num_pages_;
+    size_t max_thread_mem_;
 
     static thread_local MemoryPool* mem_pool_;
 };

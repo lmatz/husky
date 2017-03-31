@@ -16,12 +16,20 @@ class TestMemoryPool : public testing::Test {
     ~TestMemoryPool() {}
 
    protected:
-    void SetUp() {}
-    void TearDown() {}
+    void SetUp() {
+        MemoryPool::free_mem_pool();
+        PageStore::drop_all_pages();
+        PageStore::free_page_map();
+    }
+    void TearDown() {
+        MemoryPool::free_mem_pool();
+        PageStore::drop_all_pages();
+        PageStore::free_page_map();
+    }
 };
 
 TEST_F(TestMemoryPool, Functional) {
-    size_t num_pages = 256;
+    size_t num_pages = MemoryPool::get_mem_pool().capacity();
     size_t page_size = 4*1024*1024;
     auto& mem_pool = MemoryPool::get_mem_pool();
 

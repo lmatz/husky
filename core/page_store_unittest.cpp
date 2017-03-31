@@ -15,12 +15,8 @@ class TestPageStore : public testing::Test {
 
    protected:
     void SetUp() {
-        Config config;
-        size_t max_thread_mem = 1024 * 1024 * 32;
-        config.set_param("maximum_thread_memory", std::to_string(max_thread_mem));
-        config.set_param("page_size", "4194304");
-        Context::set_config(std::move(config));
-        Context::set_local_tid(0);
+        PageStore::drop_all_pages();
+        PageStore::free_page_map();
     }
     void TearDown() {
         PageStore::drop_all_pages();

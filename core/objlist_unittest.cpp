@@ -15,8 +15,16 @@ class TestObjList : public testing::Test {
     ~TestObjList() {}
 
    protected:
-    void SetUp() {}
-    void TearDown() {}
+    void SetUp() {
+        MemoryPool::free_mem_pool();
+        PageStore::drop_all_pages();
+        PageStore::free_page_map();
+    }
+    void TearDown() {
+        MemoryPool::free_mem_pool();
+        PageStore::drop_all_pages();
+        PageStore::free_page_map();
+    }
 };
 
 class Obj {
@@ -184,6 +192,53 @@ TEST_F(TestObjList, EstimatedStorage) {
     double diff_time =
         double(std::max(real_storage, estimated_storage)) / double(std::min(real_storage, estimated_storage));
     EXPECT_EQ(diff_time, 1);
+}
+
+TEST_F(TestObjList, Large) {
+    auto& mem_pool = MemoryPool::get_mem_pool();
+
+    size_t max_thread_mem = mem_pool.max_thread_mem();
+    int size_obj = sizeof(Obj);
+    size_t page_size = 4*1024*1024;
+
+    EXPECT_EQ(mem_pool.capacity(), max_thread_mem / page_size);
+
+    const size_t len = max_thread_mem / size_obj;
+    const size_t del_len = 1024 * 1024;
+    ObjList<Obj> list1;
+    ObjList<Obj> list2;
+    ObjList<Obj> list3;
+
+    for (size_t i = 0; i < len; ++i) {
+        Obj obj(i);
+        list1.add_object(obj);
+    }
+
+    for (size_t i = 0; i < del_len; ++i) {
+        Obj* p = &list1.get_data()[i];
+        list1.delete_object(p);
+    }
+
+    for (size_t i = 0; i < len; ++i) {
+        Obj obj(i);
+        list2.add_object(obj);
+    }
+
+    EXPECT_FALSE(list1.check_data_in_memory());
+    EXPECT_EQ(list1.get_size(), len - del_len);
+
+    Obj* ptr = list1.find(1024 * 1024);
+    size_t idx = list1.index_of(ptr);
+    EXPECT_EQ(idx, 0);
+
+    EXPECT_FALSE(list2.check_data_in_memory());
+    EXPECT_EQ(list1.get_size(), len - del_len);
+
+    list1.delete_object(ptr);
+    EXPECT_EQ(list1.get_num_del(), 1);
+    list1.deletion_finalize();
+    EXPECT_EQ(list1.get_num_del(), 0);
+    EXPECT_EQ(list1.get_size(), len - del_len - 1);
 }
 
 }  // namespace

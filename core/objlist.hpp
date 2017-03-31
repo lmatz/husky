@@ -86,7 +86,7 @@ class ObjList : public ObjListBase {
 
     // Sort the objlist
     void sort() {
-        auto& data = objlist_data_.data_;
+        auto& data = objlist_data_.get_data();
         if (data.size() == 0)
             return;
         std::vector<int> order(this->get_size());
@@ -145,8 +145,8 @@ class ObjList : public ObjListBase {
         //     del_bitmap_.resize(data.size());
         // }
         // lazy operation
-        size_t idx = obj_ptr - &objlist_data_.data_[0];
-        if (idx < 0 || idx >= objlist_data_.data_.size())
+        size_t idx = obj_ptr - &objlist_data_.get_data()[0];
+        if (idx < 0 || idx >= objlist_data_.get_data().size())
             throw base::HuskyException("ObjList<T>::delete_object error: index out of range");
         del_bitmap_[idx] = true;
         objlist_data_.num_del_ += 1;
@@ -156,7 +156,7 @@ class ObjList : public ObjListBase {
     // Find obj according to key
     // @Return a pointer to obj
     ObjT* find(const typename ObjT::KeyT& key) {
-        auto& working_list = objlist_data_.data_;
+        auto& working_list = objlist_data_.get_data();
         if (working_list.size() == 0)
             return nullptr;
         ObjT* start_addr = &working_list[0];
@@ -184,8 +184,8 @@ class ObjList : public ObjListBase {
         }
 
         // The object to find is not in the sorted part
-        if ((sorted_size_ < objlist_data_.data_.size()) && (hashed_objs_.find(key) != hashed_objs_.end()))
-            return &(objlist_data_.data_[hashed_objs_[key]]);
+        if ((sorted_size_ < objlist_data_.get_data().size()) && (hashed_objs_.find(key) != hashed_objs_.end()))
+            return &(objlist_data_.get_data()[hashed_objs_[key]]);
         return nullptr;
     }
 
@@ -193,20 +193,33 @@ class ObjList : public ObjListBase {
     size_t index_of(const ObjT* const obj_ptr) const { return objlist_data_.index_of(obj_ptr); }
 
     // Add an object
-    size_t add_object(ObjT&& obj) {
-        auto& data = objlist_data_.data_;
+    template <typename ObjU>
+    size_t add_object(ObjU&& obj) {
+        auto& data = objlist_data_.get_data();
+        BinStream bs;
+        bs << obj;
+        objlist_data_.byte_size_ += bs.size();
+        size_t num_pages = objlist_data_.pages_.size();
+        while (objlist_data_.byte_size_ > objlist_data_.page_size_ * num_pages) {
+            DLOG_I << "not enough pages";
+            Page* new_page = PageStore::create_page();
+            new_page->set_owner(this);
+            MemoryPool::get_mem_pool().request_page(new_page->get_key(), new_page);
+            objlist_data_.pages_.push_back(new_page);
+            num_pages += 1;
+        }
         size_t ret = hashed_objs_[obj.id()] = data.size();
-        data.push_back(std::move(obj));
+        data.push_back(std::forward<ObjU>(obj));
         del_bitmap_.push_back(0);
         return ret;
     }
-    size_t add_object(const ObjT& obj) {
-        auto& data = objlist_data_.data_;
-        size_t ret = hashed_objs_[obj.id()] = data.size();
-        data.push_back(obj);
-        del_bitmap_.push_back(0);
-        return ret;
-    }
+ //   size_t add_object(const ObjT& obj) {
+ //       auto& data = objlist_data_.get_data();
+ //       size_t ret = hashed_objs_[obj.id()] = data.size();
+ //       data.push_back(obj);
+ //       del_bitmap_.push_back(0);
+ //       return ret;
+ //   }
 
     // Check a certain position of del_bitmap_
     // @Return True if it's deleted
@@ -254,7 +267,7 @@ class ObjList : public ObjListBase {
     inline size_t get_hashed_size() const { return hashed_objs_.size(); }
     inline size_t get_size() const override { return objlist_data_.get_size(); }
     inline size_t get_vector_size() const { return objlist_data_.get_vector_size(); }
-    inline ObjT& get(size_t i) { return objlist_data_.data_[i]; }
+    inline ObjT& get(size_t i) { return objlist_data_.get(i); }
 
     bool write_to_disk() {
         DiskStore ds(id2str());
@@ -310,7 +323,24 @@ class ObjList : public ObjListBase {
         return ret;
     }
 
-    virtual void clear_page_from_memory(Page* page) {}
+    // this method is called by page owned by this objlist_data when the page is about to be swapped out of the memory
+    // since currently only supporting the swapping of the whole objlist_data
+    // so when the first page is about to be swapped out of the memory
+    // we write the data vector into these pages
+    // then these pages write into their corresponding file on the disk
+    virtual void clear_page_from_memory(Page* page) override {
+        bool data_in_mem = objlist_data_.check_data_in_memory();
+        bool pages_in_mem = objlist_data_.check_pages_in_memory();
+        // check whether this is the first page owned by this objlist to be swapped out of the memory
+        if (data_in_mem && pages_in_mem) {
+            DLOG_I << "objlist " << this->get_id() << " clear page from memory get called and we write data to disk";
+            deletion_finalize();
+            sort();
+            objlist_data_.write_to_disk();
+        }
+    }
+
+    bool check_data_in_memory() { return objlist_data_.check_data_in_memory();  }
 
    protected:
     ObjListData<ObjT> objlist_data_;

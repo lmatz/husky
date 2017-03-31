@@ -36,6 +36,16 @@ class Word {
 
     KeyT word;
     int count = 0;
+
+    // Serialization and deserialization
+    friend husky::BinStream& operator<<(husky::BinStream& stream, const Word& w) {
+        stream << w.word << w.count;
+        return stream;
+    }
+    friend husky::BinStream& operator>>(husky::BinStream& stream, Word& w) {
+        stream >> w.word >> w.count;
+        return stream;
+    }
 };
 
 bool operator<(const std::pair<int, std::string>& a, const std::pair<int, std::string>& b) {

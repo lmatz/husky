@@ -18,10 +18,13 @@
 #include <string>
 
 #include "base/log.hpp"
+#include "base/memory.hpp"
 #include "core/page.hpp"
 #include "core/page_store.hpp"
 
 namespace husky {
+
+using base::Memory;
 
 thread_local MemoryPool* MemoryPool::mem_pool_ = nullptr;
 
@@ -43,9 +46,9 @@ void MemoryPool::free_mem_pool() {
 }
 
 MemoryPool::MemoryPool() {
-    size_t max_thread_mem = 1024*1024*1024;
+    max_thread_mem_ = 1024*1024*128;
     size_t page_size = PageStore::k_page_size;
-    num_pages_ = max_thread_mem / page_size;
+    num_pages_ = max_thread_mem_ / page_size;
     DLOG_I << "MemoryPool num_pages:" << num_pages_;
     cache_ = new LRUCache<typename Page::KeyT, Page*>(num_pages_);
 }
