@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -57,6 +58,8 @@ class ObjListBase : public ChannelSource, public ChannelDestination {
 
     virtual void clear_page_from_memory(Page* page) = 0;
 
+    virtual size_t byte_size_in_memory() = 0;
+
    private:
     size_t id_;
 
@@ -86,6 +89,7 @@ class ObjList : public ObjListBase {
 
     // Sort the objlist
     void sort() {
+        std::lock_guard<std::mutex> lock(mu_);
         auto& data = objlist_data_.get_data();
         if (data.size() == 0)
             return;
@@ -105,6 +109,7 @@ class ObjList : public ObjListBase {
 
     // TODO(Fan): This will invalidate the object dict
     void deletion_finalize() {
+        std::lock_guard<std::mutex> lock(mu_);
         auto& data = objlist_data_.data_;
         if (data.size() == 0)
             return;
@@ -213,13 +218,13 @@ class ObjList : public ObjListBase {
         del_bitmap_.push_back(0);
         return ret;
     }
- //   size_t add_object(const ObjT& obj) {
- //       auto& data = objlist_data_.get_data();
- //       size_t ret = hashed_objs_[obj.id()] = data.size();
- //       data.push_back(obj);
- //       del_bitmap_.push_back(0);
- //       return ret;
- //   }
+    //   size_t add_object(const ObjT& obj) {
+    //       auto& data = objlist_data_.get_data();
+    //       size_t ret = hashed_objs_[obj.id()] = data.size();
+    //       data.push_back(obj);
+    //       del_bitmap_.push_back(0);
+    //       return ret;
+    //   }
 
     // Check a certain position of del_bitmap_
     // @Return True if it's deleted
@@ -300,6 +305,7 @@ class ObjList : public ObjListBase {
     }
 
     size_t estimated_storage_size(const double sample_rate = 0.005) {
+        std::lock_guard<std::mutex> lock(mu_);
         if (this->get_vector_size() == 0)
             return 0;
         const size_t sample_num = this->get_vector_size() * sample_rate + 1;
@@ -323,12 +329,19 @@ class ObjList : public ObjListBase {
         return ret;
     }
 
+    size_t byte_size_in_memory() override {
+        if (!check_data_in_memory()) {
+            return 0;
+        }
+        return estimated_storage_size();
+    }
+
     // this method is called by page owned by this objlist_data when the page is about to be swapped out of the memory
     // since currently only supporting the swapping of the whole objlist_data
     // so when the first page is about to be swapped out of the memory
     // we write the data vector into these pages
     // then these pages write into their corresponding file on the disk
-    virtual void clear_page_from_memory(Page* page) override {
+    void clear_page_from_memory(Page* page) override {
         bool data_in_mem = objlist_data_.check_data_in_memory();
         bool pages_in_mem = objlist_data_.check_pages_in_memory();
         // check whether this is the first page owned by this objlist to be swapped out of the memory
@@ -336,11 +349,12 @@ class ObjList : public ObjListBase {
             DLOG_I << "objlist " << this->get_id() << " clear page from memory get called and we write data to disk";
             deletion_finalize();
             sort();
+            std::lock_guard<std::mutex> lock(mu_);
             objlist_data_.write_to_disk();
         }
     }
 
-    bool check_data_in_memory() { return objlist_data_.check_data_in_memory();  }
+    bool check_data_in_memory() { return objlist_data_.check_data_in_memory(); }
 
    protected:
     ObjListData<ObjT> objlist_data_;
@@ -348,5 +362,6 @@ class ObjList : public ObjListBase {
     std::vector<bool> del_bitmap_;
     std::unordered_map<typename ObjT::KeyT, size_t> hashed_objs_;
     std::unordered_map<std::string, AttrListBase*> attrlist_map;
+    std::mutex mu_;
 };
 }  // namespace husky

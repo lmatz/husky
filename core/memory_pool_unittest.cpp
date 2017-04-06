@@ -3,9 +3,9 @@
 #include <sstream>
 #include <utility>
 
-#include "gtest/gtest.h"
 #include "core/page.hpp"
 #include "core/page_store.hpp"
+#include "gtest/gtest.h"
 
 namespace husky {
 namespace {
@@ -30,7 +30,7 @@ class TestMemoryPool : public testing::Test {
 
 TEST_F(TestMemoryPool, Functional) {
     size_t num_pages = MemoryPool::get_mem_pool().capacity();
-    size_t page_size = 4*1024*1024;
+    size_t page_size = 4 * 1024 * 1024;
     auto& mem_pool = MemoryPool::get_mem_pool();
 
     for (int i = 1; i <= num_pages; i++) {

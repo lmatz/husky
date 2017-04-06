@@ -48,6 +48,7 @@ class MemoryPool {
     inline size_t capacity() { return num_pages_; }
 
     inline size_t max_thread_mem() { return max_thread_mem_; }
+
    private:
     MemoryPool();
 

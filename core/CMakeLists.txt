@@ -35,7 +35,8 @@ file(GLOB core-src-files
     balance.cpp
     page.cpp
     page_store.cpp
-    memory_pool.cpp)
+    memory_pool.cpp
+    memory_checker.cpp)
 husky_cache_variable(core-src-files ${core-src-files})
 
 add_library(core-objs OBJECT ${core-src-files})

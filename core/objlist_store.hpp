@@ -20,6 +20,7 @@
 #include "base/assert.hpp"
 #include "base/exception.hpp"
 #include "core/context.hpp"
+#include "core/memory_checker.hpp"
 #include "core/objlist.hpp"
 
 namespace husky {
@@ -32,6 +33,7 @@ class ObjListStore {
     static ObjList<ObjT>& create_objlist() {
         ObjListMap& objlist_map = get_objlist_map();
         auto* objlist = new ObjList<ObjT>();
+        MemoryChecker::get_mem_checker().add_objlist_on_thread(Context::get_local_tid(), objlist);
         objlist_map.insert({objlist->get_id(), objlist});
         return *objlist;
     }

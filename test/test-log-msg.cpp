@@ -26,11 +26,11 @@ int main(int argc, char** argv) {
     husky::DLOG_W << "Warning Log in debug mode";
     husky::LOG_E << "Error Log";
     husky::DLOG_E << "Error Log in debug mode";
-    //husky::LOG_F << "Fatal Log";
-    //husky::DLOG_F << "Fatal Log";
-    //husky::ASSERT(0);
-    //husky::ASSERT_MSG(0, "abc");
-    //husky::DASSERT(0);
+    // husky::LOG_F << "Fatal Log";
+    // husky::DLOG_F << "Fatal Log";
+    // husky::ASSERT(0);
+    // husky::ASSERT_MSG(0, "abc");
+    // husky::DASSERT(0);
     husky::DASSERT_MSG(0, "abc");
     return 0;
 }

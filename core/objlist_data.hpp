@@ -31,7 +31,7 @@ class ObjListData {
    public:
     ObjListData() = default;
     ~ObjListData() {
-        for (size_t i=0;i<pages_.size(); i++) {
+        for (size_t i = 0; i < pages_.size(); i++) {
             PageStore::release_page(pages_[i]);
         }
     }
@@ -67,7 +67,7 @@ class ObjListData {
 
     ObjT& get(size_t i) {
         get_data();
-        if (i<0 || i>=data_.size()) {
+        if (i < 0 || i >= data_.size()) {
             throw base::HuskyException("ObjListData<T>::get error: index out of range");
         }
         return data_[i];
@@ -93,7 +93,7 @@ class ObjListData {
     bool check_data_in_memory() const { return data_in_memory_; }
 
     bool check_pages_in_memory() const {
-        for(size_t i=0;i<pages_.size();i++) {
+        for (size_t i = 0; i < pages_.size(); i++) {
             if (!pages_[i]->in_memory()) {
                 return false;
             }
@@ -110,7 +110,7 @@ class ObjListData {
         // since deletion finalize may actually delete some data
         // we may not need that many pages any more, so get rid of some pages
         size_t num_pages = pages_.size();
-        while (byte_size_ <= (page_size_ * (num_pages-1)) && num_pages >= 1) {
+        while (byte_size_ <= (page_size_ * (num_pages - 1)) && num_pages >= 1) {
             Page* page = pages_.back();
             pages_.pop_back();
             PageStore::release_page(page);

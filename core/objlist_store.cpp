@@ -18,6 +18,8 @@
 #include <unordered_map>
 
 #include "base/session_local.hpp"
+#include "core/context.hpp"
+#include "core/memory_checker.hpp"
 
 namespace husky {
 
@@ -39,6 +41,8 @@ void ObjListStore::drop_objlist(size_t id) {
     if (objlist_map.find(id) == objlist_map.end())
         throw base::HuskyException("ObjListStore::drop_objlist: ObjList id doesn't exist");
 
+    auto objlist = objlist_map[id];
+    MemoryChecker::get_mem_checker().delete_objlist_on_thread(Context::get_local_tid(), objlist);
     delete objlist_map[id];
     objlist_map.erase(id);
 }
@@ -47,9 +51,10 @@ void ObjListStore::drop_all_objlists() {
     if (s_objlist_map == nullptr)
         return;
 
-    for (auto& objlist_pair : (*s_objlist_map))
+    for (auto& objlist_pair : (*s_objlist_map)) {
+        MemoryChecker::get_mem_checker().delete_objlist_on_thread(Context::get_local_tid(), objlist_pair.second);
         delete objlist_pair.second;
-
+    }
     s_objlist_map->clear();
 }
 

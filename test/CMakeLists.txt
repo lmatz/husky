@@ -55,3 +55,9 @@ add_executable(TestMongoDBOutputFormat test-mongodb-outputformat.cpp)
 target_link_libraries(TestMongoDBOutputFormat ${husky})
 target_link_libraries(TestMongoDBOutputFormat ${HUSKY_EXTERNAL_LIB})
 husky_default_properties(TestMongoDBOutputFormat)
+
+# TestSwapping
+add_executable(TestSwapping test-swapping.cpp)
+target_link_libraries(TestSwapping ${husky})
+target_link_libraries(TestSwapping ${HUSKY_EXTERNAL_LIB})
+husky_default_properties(TestSwapping)

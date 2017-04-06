@@ -46,7 +46,7 @@ void MemoryPool::free_mem_pool() {
 }
 
 MemoryPool::MemoryPool() {
-    max_thread_mem_ = 1024*1024*128;
+    max_thread_mem_ = 1024 * 1024 * 16;
     size_t page_size = PageStore::k_page_size;
     num_pages_ = max_thread_mem_ / page_size;
     DLOG_I << "MemoryPool num_pages:" << num_pages_;

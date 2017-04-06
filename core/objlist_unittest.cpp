@@ -199,7 +199,7 @@ TEST_F(TestObjList, Large) {
 
     size_t max_thread_mem = mem_pool.max_thread_mem();
     int size_obj = sizeof(Obj);
-    size_t page_size = 4*1024*1024;
+    size_t page_size = 4 * 1024 * 1024;
 
     EXPECT_EQ(mem_pool.capacity(), max_thread_mem / page_size);
 
