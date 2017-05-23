@@ -3,6 +3,8 @@
 #include "gtest/gtest.h"
 
 #include "base/session_local.hpp"
+#include "core/context.hpp"
+#include "core/worker_info.hpp"
 #include "core/objlist.hpp"
 
 namespace husky {
@@ -14,7 +16,15 @@ class TestObjListStore : public testing::Test {
     ~TestObjListStore() {}
 
    protected:
-    void SetUp() {}
+    void SetUp() {
+        Context::set_local_tid(0);
+        Context::set_global_tid(0);
+        WorkerInfo worker_info;
+        worker_info.add_worker(0,0,0);
+        worker_info.set_process_id(0);
+        Context::set_worker_info(std::move(worker_info));
+    }
+
     void TearDown() { husky::base::SessionLocal::get_thread_finalizers().clear(); }
 };
 

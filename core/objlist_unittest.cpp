@@ -179,7 +179,11 @@ TEST_F(TestObjList, WriteAndRead) {
 }
 
 TEST_F(TestObjList, EstimatedStorage) {
-    const size_t len = 1000 * 1000 * 10;
+    auto& mem_pool = MemoryPool::get_mem_pool();
+    size_t max_thread_mem = mem_pool.max_thread_mem();
+    size_t page_size = 4 * 1024 * 1024;
+
+    const size_t len = max_thread_mem / sizeof(Obj);
     ObjList<Obj> test_list;
     for (size_t i = 0; i < len; ++i) {
         Obj obj(i);
